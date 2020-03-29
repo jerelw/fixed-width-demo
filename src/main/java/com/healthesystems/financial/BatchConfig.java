@@ -1,13 +1,12 @@
 package com.healthesystems.financial;
 
-import java.util.List;
-
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.file.FlatFileItemReader;
@@ -72,17 +71,20 @@ public class BatchConfig {
 		return tokenizer;
 	}
 	
-	public ItemWriter<Person> writer() {
-		return new ItemWriter<Person>() {
-			@Override
-			public void write(List<? extends Person> items) throws Exception {
-				items.forEach(i -> log.info("Writing {}", i));				
-			}};
+	public ItemProcessor<Person,Person> processor() {
+		return (item) -> { 
+			log.info("Processing {}", item);
+			return item;
+		};
+	}
+	
+	public ItemWriter<Person> writer() {		
+		return (items) -> items.forEach(i -> log.info("Writing {}", i));	
 	}
 	
 	@Bean
 	public Step step() {
-		return stepBuilderFactory.get("step").<Person,Person>chunk(10).reader(personItemReader()).writer(writer()).build();
+		return stepBuilderFactory.get("step").<Person,Person>chunk(10).reader(personItemReader()).processor(processor()).writer(writer()).build();
 	}
 	
 	@Bean
